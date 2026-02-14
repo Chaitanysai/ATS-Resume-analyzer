@@ -25,18 +25,21 @@ class ATSResumeAnalyzer:
     """Main class for analyzing resume ATS compatibility"""
     
     def __init__(self):
-    # Load spaCy model
+    # Load spaCy model - make it optional for deployment
+    self.nlp = None
     try:
+        import spacy
         self.nlp = spacy.load("en_core_web_sm")
     except:
-        print("WARNING: spaCy model not found. Attempting download...")
+        # Model not found, try to download
         try:
-            import subprocess
-            subprocess.run(["python", "-m", "spacy", "download", "en_core_web_sm"], check=True)
+            import spacy.cli
+            spacy.cli.download("en_core_web_sm")
+            import spacy
             self.nlp = spacy.load("en_core_web_sm")
-            print("spaCy model downloaded successfully!")
         except:
-            print("ERROR: Could not download spaCy model. Some features will be limited.")
+            # If download fails, continue without NLP (limited features)
+            print("WARNING: spaCy model not available. Running with limited NLP features.")
             self.nlp = None
         
         # Define ATS-friendly section headers
@@ -217,10 +220,10 @@ class ATSResumeAnalyzer:
         return score
     
     def _score_content(self, text: str, recommendations: List[str], 
-                      strengths: List[str]) -> float:
-        """Score content quality using NLP"""
-        score = 50.0  # Base score
-        
+                  strengths: List[str]) -> float:
+    """Score content quality using NLP"""
+    score = 50.0  # Base score
+    
         if not self.nlp:
             return score
         
