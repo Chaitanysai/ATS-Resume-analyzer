@@ -123,7 +123,8 @@ def upload_resume():
                 'missing_keywords': analysis_result.keyword_analysis.get('missing_keywords', [])[:5]
             },
             'formatting_issues': analysis_result.formatting_issues,
-            'word_count': len(resume_text.split())
+            'word_count': len(resume_text.split()),
+            'rewrite_suggestions': analysis_result.rewrite_suggestions  # New field
         }
         
         return jsonify(response)
@@ -178,10 +179,7 @@ def too_large(e):
     return jsonify({'error': 'File size exceeds 10MB limit'}), 413
 
 
-import os
-
-# ... your other code ...
-
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(debug=True, host='0.0.0.0', port=port)
+    print("Starting ATS Resume Analyzer Server...")
+    print("Open http://localhost:5000 in your browser")
+    app.run(debug=True, host='0.0.0.0', port=5000)

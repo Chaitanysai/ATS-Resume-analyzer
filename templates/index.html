@@ -140,6 +140,66 @@
             color: white;
         }
         
+        /* NEW: Rewriting Suggestions Styles */
+        .rewrite-card {
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+        }
+        
+        .rewrite-card:hover {
+            border-color: var(--primary-color);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        
+        .rewrite-type-badge {
+            font-size: 0.8rem;
+            padding: 4px 12px;
+            border-radius: 15px;
+            margin-bottom: 10px;
+            display: inline-block;
+        }
+        
+        .before-after-box {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid;
+            position: relative;
+        }
+        
+        .before-box {
+            border-left-color: #dc3545;
+            background: #fff5f5;
+        }
+        
+        .after-box {
+            border-left-color: #28a745;
+            background: #f0fff4;
+        }
+        
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 0.85rem;
+            padding: 5px 15px;
+            z-index: 10;
+        }
+        
+        .reason-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 12px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        
         .spinner-border-custom {
             width: 3rem;
             height: 3rem;
@@ -172,7 +232,7 @@
                 <h1 class="display-4 text-white fw-bold mb-2">
                     <i class="bi bi-file-earmark-text"></i> ATS Resume Analyzer
                 </h1>
-                <p class="lead text-white">Get instant feedback on your resume's ATS compatibility</p>
+                <p class="lead text-white">Get instant feedback with AI-powered rewriting suggestions</p>
             </div>
             
             <!-- Upload Section -->
@@ -253,6 +313,21 @@
                                     <i class="bi bi-bar-chart"></i> Section Breakdown
                                 </h5>
                                 <div id="sectionScores"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- AI-Powered Rewriting Suggestions (NEW!) -->
+                <div class="row" id="rewriteSuggestionsRow" style="display: none;">
+                    <div class="col-12 mb-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="bi bi-pencil-square text-primary"></i> AI-Powered Rewriting Suggestions
+                                </h5>
+                                <p class="text-muted">Ready-to-use improvements for your resume. Simply copy and paste!</p>
+                                <div id="rewriteSuggestions"></div>
                             </div>
                         </div>
                     </div>
@@ -441,6 +516,64 @@
                 `;
             }
             
+            // NEW: Rewriting Suggestions
+            const rewriteSuggestionsDiv = document.getElementById('rewriteSuggestions');
+            const rewriteRow = document.getElementById('rewriteSuggestionsRow');
+            
+            if (data.rewrite_suggestions && data.rewrite_suggestions.length > 0) {
+                rewriteRow.style.display = 'block';
+                
+                rewriteSuggestionsDiv.innerHTML = data.rewrite_suggestions.map((suggestion, index) => {
+                    const typeColors = {
+                        'bullet_improvement': 'primary',
+                        'add_metrics': 'success',
+                        'keywords': 'info',
+                        'missing_section': 'warning',
+                        'missing_contact': 'danger'
+                    };
+                    
+                    const typeLabels = {
+                        'bullet_improvement': 'Bullet Point Enhancement',
+                        'add_metrics': 'Add Quantifiable Metrics',
+                        'keywords': 'Keyword Integration',
+                        'missing_section': 'Missing Section Template',
+                        'missing_contact': 'Contact Information'
+                    };
+                    
+                    const badgeColor = typeColors[suggestion.type] || 'secondary';
+                    const typeLabel = typeLabels[suggestion.type] || suggestion.type;
+                    
+                    return `
+                        <div class="rewrite-card">
+                            <span class="badge bg-${badgeColor} rewrite-type-badge">
+                                ${typeLabel}
+                            </span>
+                            <h6><strong>${suggestion.section}</strong></h6>
+                            
+                            <div class="before-after-box before-box">
+                                <strong><i class="bi bi-x-circle text-danger"></i> Before:</strong>
+                                <p class="mt-2 mb-0" style="color: #721c24;">${escapeHtml(suggestion.before)}</p>
+                            </div>
+                            
+                            <div class="before-after-box after-box">
+                                <strong><i class="bi bi-check-circle text-success"></i> After (Improved):</strong>
+                                <button class="btn btn-sm btn-outline-success copy-btn" onclick="copyToClipboard(this, \`${escapeHtml(suggestion.after)}\`)">
+                                    <i class="bi bi-clipboard"></i> Copy
+                                </button>
+                                <p class="mt-2 mb-0" style="color: #155724; padding-right: 80px;">${escapeHtml(suggestion.after)}</p>
+                            </div>
+                            
+                            <div class="reason-box">
+                                <strong><i class="bi bi-lightbulb"></i> Why this helps:</strong>
+                                <p class="mb-0 mt-1">${escapeHtml(suggestion.reason)}</p>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } else {
+                rewriteRow.style.display = 'none';
+            }
+            
             // Recommendations
             const recommendationsDiv = document.getElementById('recommendations');
             if (data.recommendations.length > 0) {
@@ -489,6 +622,49 @@
             // Show results
             resultsSection.style.display = 'block';
             resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        
+        // Helper function to escape HTML
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;',
+                '`': '&#96;'
+            };
+            return text.replace(/[&<>"'`]/g, m => map[m]);
+        }
+        
+        // Copy to clipboard function
+        function copyToClipboard(button, text) {
+            // Unescape HTML entities
+            const textarea = document.createElement('textarea');
+            textarea.value = text
+                .replace(/&quot;/g, '"')
+                .replace(/&#039;/g, "'")
+                .replace(/&amp;/g, '&')
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .replace(/&#96;/g, '`');
+            
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            
+            // Change button text temporarily
+            const originalHTML = button.innerHTML;
+            button.innerHTML = '<i class="bi bi-check"></i> Copied!';
+            button.classList.remove('btn-outline-success');
+            button.classList.add('btn-success');
+            
+            setTimeout(() => {
+                button.innerHTML = originalHTML;
+                button.classList.remove('btn-success');
+                button.classList.add('btn-outline-success');
+            }, 2000);
         }
     </script>
 </body>
